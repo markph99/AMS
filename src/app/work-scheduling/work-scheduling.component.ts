@@ -8,6 +8,13 @@ import { UsersSchedule } from '../models/users-schedule';
   styleUrls: ['./work-scheduling.component.css'],
 })
 export class WorkSchedulingComponent implements OnInit {
+  isLoading = false;
+  hideLoading() {
+    this.isLoading = false;
+  }
+  showLoading() {
+    this.isLoading = true;
+  }
 
   userSchedule: UsersSchedule[] = [];
   // models of work scheduling
@@ -23,8 +30,11 @@ export class WorkSchedulingComponent implements OnInit {
   constructor(private schedulingService: SchedulingService) {}
 
   ngOnInit(): void {
+    // Automatically fetch updates every 10 seconds
     this.schedulingService.getUser().subscribe((data) => {
-      this.userSchedule = data;
+      this.userSchedule = data.sort((a, b) =>
+        new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+      );
     });
   }
 

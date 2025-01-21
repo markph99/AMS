@@ -1,4 +1,4 @@
-<div>
+<div class="mt-5">
   <header class="text-center my-4">
     <h1>Work Scheduling</h1>
   </header>
@@ -6,9 +6,15 @@
   <!-- Add Button Section -->
   <section class="container mb-4">
     <div class="d-flex justify-content-end align-items-center">
-      <button type="button" data-bs-toggle="modal" data-bs-target="#wsModal"
-        class="btn btn-link p-0 text-dark text-decoration-none" aria-label="Add Schedule"
-        style="border: none; background: none; font-size: 1.5rem;">
+      <button
+        type="button"
+        data-bs-toggle="modal"
+        data-bs-target="#wsModal"
+        class="btn btn-link p-0 text-dark text-decoration-none"
+        aria-label="Add Schedule"
+        style="border: none; background: none; font-size: 1.5rem;"
+        (click)="showLoading()"
+      >
         +
       </button>
     </div>
@@ -46,15 +52,19 @@
             <td>{{ schedule.branch }}</td>
             <td>{{ schedule.department }}</td>
             <td>{{ schedule.schedule_name }}</td>
-            <td>{{ schedule.start_date}} - {{ schedule.end_date }}</td>
+            <td>
+              {{ schedule.start_date | date: 'MMM d' }} -
+              {{ schedule.end_date | date: 'MMM d, y' }}
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
   </section>
 
+
   <!-- Modal -->
-  <div class="modal fade" id="wsModal" tabindex="-1" aria-labelledby="wsModalLabel" aria-hidden="true">
+  <div class="modal fade" id="wsModal" tabindex="-1" aria-labelledby="wsModalLabel" aria-hidden="true" (shown.bs.modal)="hideLoading()">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <!-- Modal Header -->
@@ -65,57 +75,66 @@
 
         <!-- Modal Body -->
         <div class="modal-body">
-          <form (ngSubmit)="onSubmit()">
-            <div class="row g-3">
-              <!-- Branch Field -->
-              <div class="col-md-6">
-                <label for="branch" class="form-label">Name</label>
-                <input type="text" class="form-control" [(ngModel)]="newSchedule.name" name="name" required>
-              </div>
-
-              <!-- Department Field -->
-              <div class="col-md-6">
-                <label for="department" class="form-label">Branch</label>
-                <input type="text" class="form-control" [(ngModel)]="newSchedule.branch" name="branch" required>
-              </div>
-
-               <!-- Schedule Name Field -->
-               <div class="col-md-6">
-                <label for="schedule" class="form-label">Department</label>
-                <input type="text" class="form-control" [(ngModel)]="newSchedule.department" name="department" required>
-              </div>
-
-              <!-- Select Schedule Name -->
-              <div class="col-md-6">
-                <label for="employees" class="form-label">Schedule Name</label>
-                <select class="form-select" [(ngModel)]="newSchedule.schedule_name" name="schedule_name" required>
-                  <option value="" disabled selected hidden></option>
-                  <option value="Day Shift">Day Shift</option>
-                  <option value="Schedule Regular">Schedule Regular</option>
-                  <option value="Night Shift">Night Shift</option>
-                </select>
-              </div>
-
-
-              <!-- Start Date Field -->
-              <div class="col-md-6">
-                <label for="startDate" class="form-label">Start Date</label>
-                <input type="date" class="form-control" [(ngModel)]="newSchedule.start_date" name="startDate" required>
-              </div>
-
-              <!-- End Date Field -->
-              <div class="col-md-6">
-                <label for="endDate" class="form-label">End Date</label>
-                <input type="date" class="form-control" [(ngModel)]="newSchedule.end_date" name="endDate" required>
-              </div>
+          <!-- Loading Indicator -->
+          <div *ngIf="isLoading" class="d-flex justify-content-center align-items-center" style="height: 100px;">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
             </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-warning text-white" data-bs-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn btn-primary" [disabled]="!newSchedule.name || !newSchedule.branch || !newSchedule.schedule_name || !newSchedule.start_date || !newSchedule.end_date">
-                Submit
-              </button>
-            </div>
-          </form>
+          </div>
+
+          <!-- Form Content (Hidden While Loading) -->
+          <div *ngIf="!isLoading">
+            <form (ngSubmit)="onSubmit()">
+              <div class="row g-3">
+                <!-- Name Field -->
+                <div class="col-md-6">
+                  <label for="name" class="form-label">Name</label>
+                  <input type="text" class="form-control" [(ngModel)]="newSchedule.name" name="name" required>
+                </div>
+
+                <!-- Branch Field -->
+                <div class="col-md-6">
+                  <label for="branch" class="form-label">Branch</label>
+                  <input type="text" class="form-control" [(ngModel)]="newSchedule.branch" name="branch" required>
+                </div>
+
+                <!-- Department Field -->
+                <div class="col-md-6">
+                  <label for="department" class="form-label">Department</label>
+                  <input type="text" class="form-control" [(ngModel)]="newSchedule.department" name="department" required>
+                </div>
+
+                <!-- Schedule Name Field -->
+                <div class="col-md-6">
+                  <label for="schedule" class="form-label">Schedule Name</label>
+                  <select class="form-select" [(ngModel)]="newSchedule.schedule_name" name="schedule_name" required>
+                    <option value="" disabled selected hidden></option>
+                    <option value="Day Shift">Day Shift</option>
+                    <option value="Schedule Regular">Schedule Regular</option>
+                    <option value="Night Shift">Night Shift</option>
+                  </select>
+                </div>
+
+                <!-- Start Date Field -->
+                <div class="col-md-6">
+                  <label for="startDate" class="form-label">Start Date</label>
+                  <input type="date" class="form-control" [(ngModel)]="newSchedule.start_date" name="startDate" required>
+                </div>
+
+                <!-- End Date Field -->
+                <div class="col-md-6">
+                  <label for="endDate" class="form-label">End Date</label>
+                  <input type="date" class="form-control" [(ngModel)]="newSchedule.end_date" name="endDate" required>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-warning text-white" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary" [disabled]="!newSchedule.name || !newSchedule.branch || !newSchedule.schedule_name || !newSchedule.start_date || !newSchedule.end_date">
+                  Submit
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
