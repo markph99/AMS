@@ -4,6 +4,8 @@ import { UsersSchedule } from '../models/users-schedule';
 import { ToastrService } from 'ngx-toastr';
 import * as bootstrap from 'bootstrap';
 
+// Imports here...
+
 @Component({
   selector: 'app-work-scheduling',
   templateUrl: './work-scheduling.component.html',
@@ -12,8 +14,9 @@ import * as bootstrap from 'bootstrap';
 export class WorkSchedulingComponent implements OnInit {
   isLoading = false;
   userSchedule: UsersSchedule[] = [];
-  currentPage: number = 1;
-  // Model for a new or edited schedule
+  filteredSchedules: UsersSchedule[] = [];
+  currentPage = 1;
+  searchQuery = '';
   newSchedule: UsersSchedule = {
     name: '',
     branch: '',
@@ -22,8 +25,8 @@ export class WorkSchedulingComponent implements OnInit {
     start_date: '',
     end_date: '',
   };
-  isEditMode: boolean = false;
-isSuccess: any;
+  isEditMode = false;
+  deleteTarget: UsersSchedule | null = null;
 
   constructor(
     private schedulingService: SchedulingService,
@@ -34,106 +37,116 @@ isSuccess: any;
     this.fetchSchedules();
   }
 
-  // Show loader
-  showLoading() {
+  onSearchChange(): void {
+    this.fetchSchedules(); // Backend fetch with the query
+  }
+
+  fetchSchedules(): void {
     this.isLoading = true;
-  }
-
-  // Hide loader
-  hideLoading() {
-    this.isLoading = false;
-  }
-
-  // Fetch all schedules
-  fetchSchedules() {
-    this.schedulingService.getUser().subscribe(
+    this.schedulingService.getUser(this.searchQuery).subscribe(
       (data) => {
-        this.userSchedule = data.sort(
-          (a, b) =>
-            new Date(b.createdAt ?? 0).getTime() -
-            new Date(a.createdAt ?? 0).getTime()
-        );
+        this.userSchedule = data;
+        this.filteredSchedules = [...data];
+        this.isLoading = false;
       },
       (error) => {
-        console.error('Error fetching schedules:', error);
-        this.toastr.error('Failed to fetch schedules. Please try again.');
+        this.toastr.error('Failed to fetch schedules.');
+        this.isLoading = false;
       }
     );
   }
-  // Open Add Schedule Modal
+
   openAddScheduleModal() {
     this.isEditMode = false;
     this.resetForm();
-    this.openModal();
+    this.openModal('wsModal');
   }
 
-  // Edit an existing schedule
-  editSchedule(schedule: UsersSchedule) {
-    console.log('Editing schedule:', schedule);
-    this.isEditMode = true;
-    this.newSchedule = {
-      ...schedule,
-      start_date: schedule.start_date
-        ? new Date(schedule.start_date).toISOString().split('T')[0]
-        : '',
-      end_date: schedule.end_date
-        ? new Date(schedule.end_date).toISOString().split('T')[0]
-        : '',
-    };
-    this.openModal();
-  }
+editSchedule(schedule: UsersSchedule) {
+  this.isEditMode = true;
+  this.newSchedule = {
+    ...schedule,
+    start_date: schedule.start_date
+      ? new Date(schedule.start_date).toISOString().split('T')[0]
+      : '',
+    end_date: schedule.end_date
+      ? new Date(schedule.end_date).toISOString().split('T')[0]
+      : '',
+  };
+  this.openModal('wsModal');
+}
 
-  // Helper method to open the modal
-  openModal() {
-    const modalElement = document.getElementById('wsModal');
-    if (modalElement) {
-      console.log('Opening modal...');
-      const modalInstance = new bootstrap.Modal(modalElement);
-      modalInstance.show();
+
+  onSubmit() {
+    if (this.isEditMode) {
+      this.updateSchedule();
     } else {
-      console.error('Modal element not found');
+      this.addSchedule();
     }
   }
 
-  // Add or Update a schedule
-  onSubmit() {
-    this.showLoading();
+  addSchedule() {
+    this.schedulingService.addUser(this.newSchedule).subscribe(
+      (schedule) => {
+        this.userSchedule.push(schedule);
+        this.fetchSchedules();
+        this.closeModal('wsModal');
+        this.toastr.success('Schedule added successfully.');
+      },
+      () => this.toastr.error('Failed to add schedule.')
+    );
+  }
 
-    if (this.isEditMode && this.newSchedule.id) {
-      this.schedulingService
-        .updateUser(this.newSchedule.id, this.newSchedule)
-        .subscribe(
-          (updated) => {
-            const index = this.userSchedule.findIndex(
-              (u) => u.id === updated.id
-            );
-            if (index > -1) {
-              this.userSchedule[index] = updated;
-            }
-            this.resetForm();
-            this.hideLoading();
-            this.toastr.success('Schedule updated successfully!');
-          },
-          (error) => {
-            console.error('Error updating schedule:', error);
-            this.toastr.error('Failed to update schedule. Please try again.');
-            this.hideLoading();
-          }
-        );
-    } else {
-      this.schedulingService.addUser(this.newSchedule).subscribe(
-        (user) => {
-          this.userSchedule.push(user);
-          this.resetForm();
-          this.hideLoading();
-          this.toastr.success('Schedule added successfully!');
+  updateSchedule() {
+    this.schedulingService
+      .updateUser(this.newSchedule.id!, this.newSchedule)
+      .subscribe(
+        (updatedSchedule) => {
+          this.userSchedule = this.userSchedule.map((s) =>
+            s.id === updatedSchedule.id ? updatedSchedule : s
+          );
+          this.fetchSchedules();
+          this.closeModal('wsModal');
+          this.toastr.success('Schedule updated successfully.');
         },
-        (error) => {
-          console.error('Error adding schedule:', error);
-          this.toastr.error('Failed to add schedule. Please try again.');
-          this.hideLoading();
-        }
+        () => this.toastr.error('Failed to update schedule.')
       );
+  }
+
+  confirmDelete(schedule: UsersSchedule) {
+    this.deleteTarget = schedule;
+    this.openModal('deleteConfirmModal');
+  }
+
+  deleteScheduleConfirmed() {
+    if (this.deleteTarget?.id) {
+      this.schedulingService.deleteUser(this.deleteTarget.id).subscribe(
+        () => {
+          this.userSchedule = this.userSchedule.filter(
+            (s) => s.id !== this.deleteTarget!.id
+          );
+          this.fetchSchedules();
+          this.closeModal('deleteConfirmModal');
+          this.toastr.success('Schedule deleted successfully.');
+        },
+        () => this.toastr.error('Failed to delete schedule.')
+      );
+    }
+  }
+
+  openModal(modalId: string) {
+    const modalElement = document.getElementById(modalId);
+    if (modalElement) {
+      const modalInstance = new bootstrap.Modal(modalElement);
+      modalInstance.show();
+    }
+  }
+
+  closeModal(modalId: string) {
+    const modalElement = document.getElementById(modalId);
+    if (modalElement) {
+      const modalInstance = bootstrap.Modal.getInstance(modalElement);
+      modalInstance?.hide();
     }
   }
 
@@ -145,36 +158,6 @@ isSuccess: any;
       schedule_name: '',
       start_date: '',
       end_date: '',
-      id: undefined,
     };
-  }
-
-  // Delete a schedule
-  deleteSchedule(schedule: UsersSchedule) {
-    if (!schedule.id) {
-      console.error('Error: Schedule ID is undefined.');
-      return;
-    }
-
-    if (
-      confirm(
-        `Are you sure you want to delete the schedule for ${schedule.name}?`
-      )
-    ) {
-      this.showLoading();
-      this.schedulingService.deleteUser(schedule.id).subscribe(
-        () => {
-          this.userSchedule = this.userSchedule.filter(
-            (u) => u.id !== schedule.id
-          );
-          this.hideLoading();
-          this.toastr.success('Schedule deleted successfully!');
-        },
-        (error) => {
-          console.error('Error deleting schedule:', error);
-          this.toastr.error('Failed to delete schedule. Please try again.');
-        }
-      );
-    }
   }
 }

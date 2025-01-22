@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { UsersSchedule } from '../models/users-schedule';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SchedulingService {
   // Base URL for the database
@@ -13,8 +13,12 @@ export class SchedulingService {
   constructor(private http: HttpClient) {}
 
   // Querying schedules
-  getUser(): Observable<UsersSchedule[]> {
-    return this.http.get<UsersSchedule[]>(this.baseUrl);
+  getUser(filterQuery: string = ''): Observable<UsersSchedule[]> {
+    let params = new HttpParams();
+    if (filterQuery.trim()) {
+      params = params.set('query', filterQuery); // Add filter query to parameters
+    }
+    return this.http.get<UsersSchedule[]>(this.baseUrl, { params });
   }
 
   // Adding a schedule
