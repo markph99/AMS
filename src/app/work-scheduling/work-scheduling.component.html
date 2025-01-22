@@ -1,139 +1,214 @@
-<div class="mt-5">
-  <header class="text-center my-4">
-    <h1>Work Scheduling</h1>
+<div class="container mt-5">
+  <!-- Page Header -->
+  <header class="text-center mb-4">
+    <h1 class="fw-bold text-primary">Work Scheduling</h1>
   </header>
 
   <!-- Add Button Section -->
-  <section class="container mb-4">
-    <div class="d-flex justify-content-end align-items-center">
-      <button
-        type="button"
-        data-bs-toggle="modal"
-        data-bs-target="#wsModal"
-        class="btn btn-link p-0 text-dark text-decoration-none"
-        aria-label="Add Schedule"
-        style="border: none; background: none; font-size: 1.5rem;"
-        (click)="showLoading()"
-      >
-        +
-      </button>
-    </div>
-  </section>
+  <div class="d-flex justify-content-end align-items-center mb-4">
+    <button
+      type="button"
+      class="btn btn-outline-primary btn-sm"
+      aria-label="Add Schedule"
+      (click)="openAddScheduleModal()"
+    >
+      <i class="bi bi-plus-lg"></i> Add Schedule
+    </button>
+  </div>
 
   <!-- Filter Section -->
-  <section>
-    <div class="container">
-      <h6 class="fw-semibold fs-6 font-monospace">Filter</h6>
-    </div>
-  </section>
+  <div class="mb-3">
+    <h6 class="fw-semibold text-secondary">Filter</h6>
+    <input
+      type="text"
+      class="form-control form-control-sm"
+      placeholder="Search schedules..."
+    />
+  </div>
 
   <!-- Table Section -->
-  <section class="container">
-    <div class="table-responsive">
-      <table class="table table-bordered table-striped text-center align-middle">
-        <thead class="table-secondary">
-          <tr>
-            <th scope="col">
-              <input type="checkbox" aria-label="Select all schedules">
-            </th>
-            <th scope="col">Name</th>
-            <th scope="col">Branch</th>
-            <th scope="col">Department</th>
-            <th scope="col">Schedule Name</th>
-            <th scope="col">Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let schedule of userSchedule">
-            <td>
-              <input type="checkbox" aria-label="Select Schedule">
-            </td>
-            <td>{{ schedule.name }}</td>
-            <td>{{ schedule.branch }}</td>
-            <td>{{ schedule.department }}</td>
-            <td>{{ schedule.schedule_name }}</td>
-            <td>
-              {{ schedule.start_date | date: 'MMM d' }} -
-              {{ schedule.end_date | date: 'MMM d, y' }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">
+            <input type="checkbox" aria-label="Select all schedules" />
+          </th>
+          <th scope="col">Name</th>
+          <th scope="col">Branch</th>
+          <th scope="col">Department</th>
+          <th scope="col">Schedule Name</th>
+          <th scope="col">Date</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let schedule of userSchedule | paginate: { itemsPerPage: 10, currentPage: currentPage }"
+        >
+          <td>
+            <input type="checkbox" aria-label="Select Schedule" />
+          </td>
+          <td>{{ schedule.name }}</td>
+          <td>{{ schedule.branch }}</td>
+          <td>{{ schedule.department }}</td>
+          <td>{{ schedule.schedule_name }}</td>
+          <td>
+            {{ schedule.start_date | date: 'MMM d' }} -
+            {{ schedule.end_date | date: 'MMM d, y' }}
+          </td>
+          <td>
+            <button
+              class="btn btn-sm btn-outline-primary me-2"
+              aria-label="Edit Schedule"
+              (click)="editSchedule(schedule)"
+            >
+              <i class="bi bi-pencil-square"></i>
+            </button>
+            <button
+              class="btn btn-sm btn-outline-danger"
+              aria-label="Delete Schedule"
+              (click)="deleteSchedule(schedule)"
+            >
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div *ngIf="userSchedule.length === 0" class="text-center text-muted">
+      No schedules found.
     </div>
-  </section>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div class="d-flex justify-content-center mt-3">
+    <pagination-controls
+      (pageChange)="currentPage = $event"
+      [autoHide]="true"
+    ></pagination-controls>
+  </div>
 
 
-  <!-- Modal -->
-  <div class="modal fade" id="wsModal" tabindex="-1" aria-labelledby="wsModalLabel" aria-hidden="true" (shown.bs.modal)="hideLoading()">
+  <!-- Modal for Adding/Editing Schedule -->
+  <div
+    class="modal fade"
+    id="wsModal"
+    tabindex="-1"
+    aria-labelledby="wsModalLabel"
+    aria-hidden="true"
+  >
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <!-- Modal Header -->
         <div class="modal-header">
-          <h5 class="modal-title" id="wsModalLabel">Work Scheduling</h5>
+          <h5 class="modal-title" id="wsModalLabel">
+            {{ isEditMode ? 'Edit Schedule' : 'Add Schedule' }}
+          </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 
         <!-- Modal Body -->
         <div class="modal-body">
           <!-- Loading Indicator -->
-          <div *ngIf="isLoading" class="d-flex justify-content-center align-items-center" style="height: 100px;">
+          <div
+            *ngIf="isLoading"
+            class="d-flex justify-content-center align-items-center"
+            style="height: 100px;"
+          >
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
 
-          <!-- Form Content (Hidden While Loading) -->
-          <div *ngIf="!isLoading">
+          <!-- Form Content -->
+          <div *ngIf="!isLoading && !isSuccess">
             <form (ngSubmit)="onSubmit()">
               <div class="row g-3">
-                <!-- Name Field -->
                 <div class="col-md-6">
                   <label for="name" class="form-label">Name</label>
-                  <input type="text" class="form-control" [(ngModel)]="newSchedule.name" name="name" required>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="newSchedule.name"
+                    name="name"
+                    placeholder="Enter name"
+                    required
+                  />
                 </div>
-
-                <!-- Branch Field -->
                 <div class="col-md-6">
                   <label for="branch" class="form-label">Branch</label>
-                  <input type="text" class="form-control" [(ngModel)]="newSchedule.branch" name="branch" required>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="newSchedule.branch"
+                    name="branch"
+                    placeholder="Enter branch"
+                    required
+                  />
                 </div>
-
-                <!-- Department Field -->
                 <div class="col-md-6">
                   <label for="department" class="form-label">Department</label>
-                  <input type="text" class="form-control" [(ngModel)]="newSchedule.department" name="department" required>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="newSchedule.department"
+                    name="department"
+                    placeholder="Enter department"
+                    required
+                  />
                 </div>
-
-                <!-- Schedule Name Field -->
                 <div class="col-md-6">
-                  <label for="schedule" class="form-label">Schedule Name</label>
-                  <select class="form-select" [(ngModel)]="newSchedule.schedule_name" name="schedule_name" required>
-                    <option value="" disabled selected hidden></option>
+                  <label for="schedule_name" class="form-label">Schedule Name</label>
+                  <select
+                    class="form-select"
+                    [(ngModel)]="newSchedule.schedule_name"
+                    name="schedule_name"
+                    required
+                  >
+                    <option value="" disabled selected hidden>Select schedule type</option>
                     <option value="Day Shift">Day Shift</option>
                     <option value="Schedule Regular">Schedule Regular</option>
                     <option value="Night Shift">Night Shift</option>
                   </select>
                 </div>
-
-                <!-- Start Date Field -->
                 <div class="col-md-6">
-                  <label for="startDate" class="form-label">Start Date</label>
-                  <input type="date" class="form-control" [(ngModel)]="newSchedule.start_date" name="startDate" required>
+                  <label for="start_date" class="form-label">Start Date</label>
+                  <input
+                    type="date"
+                    class="form-control"
+                    [(ngModel)]="newSchedule.start_date"
+                    name="start_date"
+                    required
+                  />
                 </div>
-
-                <!-- End Date Field -->
                 <div class="col-md-6">
-                  <label for="endDate" class="form-label">End Date</label>
-                  <input type="date" class="form-control" [(ngModel)]="newSchedule.end_date" name="endDate" required>
+                  <label for="end_date" class="form-label">End Date</label>
+                  <input
+                    type="date"
+                    class="form-control"
+                    [(ngModel)]="newSchedule.end_date"
+                    name="end_date"
+                    required
+                  />
                 </div>
               </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-warning text-white" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary" [disabled]="!newSchedule.name || !newSchedule.branch || !newSchedule.schedule_name || !newSchedule.start_date || !newSchedule.end_date">
-                  Submit
+              <div class="modal-footer mt-4">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  [disabled]="!newSchedule.name || !newSchedule.branch || !newSchedule.schedule_name || !newSchedule.start_date || !newSchedule.end_date"
+                >
+                  {{ isEditMode ? 'Update' : 'Add' }} Schedule
                 </button>
               </div>
             </form>
+          </div>
+
+          <!-- Success Message -->
+          <div *ngIf="isSuccess" class="text-center">
+            <h5 class="text-success">Done!</h5>
           </div>
         </div>
       </div>
