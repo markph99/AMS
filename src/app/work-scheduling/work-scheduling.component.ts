@@ -38,7 +38,7 @@ export class WorkSchedulingComponent implements OnInit {
   }
 
   onSearchChange(): void {
-    this.fetchSchedules(); // Backend fetch with the query
+    this.fetchSchedules();
   }
 
   fetchSchedules(): void {

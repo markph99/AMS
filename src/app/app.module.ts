@@ -10,7 +10,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { WorkSchedulingComponent } from './work-scheduling/work-scheduling.component';
 import { MatDialogModule } from '@angular/material/dialog';
 import { CommonModule } from '@angular/common';
-import { FormsModule, NgModel } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { ToastrModule } from 'ngx-toastr';
 import { NgxPaginationModule } from 'ngx-pagination';
 
