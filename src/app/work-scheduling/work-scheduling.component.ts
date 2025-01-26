@@ -4,7 +4,6 @@ import { UsersSchedule } from '../models/users-schedule';
 import { ToastrService } from 'ngx-toastr';
 import * as bootstrap from 'bootstrap';
 
-// Imports here...
 
 @Component({
   selector: 'app-work-scheduling',
